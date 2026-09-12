@@ -1176,6 +1176,7 @@
   .next .icon { width: 13px; height: 13px; margin-left: 3px; }
   .actions { display: flex; align-items: center; justify-content: center; gap: 15px; min-height: 56px; }
   .primary::part(control) { min-width: 190px; min-height: 68px; font-size: 18px; gap: 10px; font-weight: 550; box-shadow: rgba(36, 48, 32, 0.03) 0px 3px 4px; }
+  .primary::part(label) { inline-size: 5em; white-space: nowrap; }
   .aux::part(control) { color: #687260; min-height: 44px; min-width: 44px; }
   .shortcut { font: inherit; font-size: 10px; line-height: 1; letter-spacing: .2px; white-space: nowrap; padding: 4px 5px; border: 1px solid #ffffff66; border-radius: 4px; color: #fff; background: #0000000a; }
   .sound .shortcut { color: #626c5c; border-color: #c9d2c2; background: transparent; }
