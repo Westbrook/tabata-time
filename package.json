@@ -15,7 +15,7 @@
     "dev": "vite --host 127.0.0.1 --port 4327 --strictPort",
     "build": "tsc --noEmit && vite build",
     "build:pages": "npm run build -- --base=/tabata-time/",
-    "deploy": "npm run build:pages && gh-pages --dist dist --branch gh-pages --dotfiles",
+    "deploy": "npm run build:pages && gh-pages --dist dist --branch gh-pages --dotfiles --remove '**/{*,.*}'",
     "preview": "vite preview --host 127.0.0.1 --port 4327 --strictPort",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "test:browser": "playwright test"
