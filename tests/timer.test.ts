@@ -28,6 +28,56 @@ test('starts with the requested two intervals and a ready first round', () => {
   assert.equal(timer.round.get(), 1);
   assert.equal(timer.nextSegment.get().id, 'rest');
   assert.equal(timer.totalDuration.get(), 45);
+  assert.equal(timer.elapsedMs.get(), 0);
+});
+
+test('total time accumulates running time across cycles and excludes pauses', () => {
+  const { timer, at } = setup();
+  at(10_000);
+  timer.start();
+  at(55_123.5);
+  timer.pause();
+  assert.equal(timer.elapsedMs.get(), 45_123.5);
+  assert.equal(timer.round.get(), 2);
+  at(155_000);
+  timer.tick();
+  assert.equal(timer.elapsedMs.get(), 45_123.5);
+  timer.start();
+  at(155_876.5);
+  timer.tick();
+  assert.equal(timer.elapsedMs.get(), 46_000);
+  timer.tick();
+  assert.equal(timer.elapsedMs.get(), 46_000);
+  at(155_000 + 45_000 * 1_000_000);
+  timer.tick();
+  assert.equal(timer.elapsedMs.get(), 45_123.5 + 45_000 * 1_000_000);
+});
+
+test('skipping and deleting do not add unused time, while resets and saved routines clear it', () => {
+  const { timer, at } = setup([...DEFAULT_SEGMENTS, { id: 'extra', name: 'Extra', duration: 10, cue: 'work' }]);
+  timer.start();
+  at(1_234);
+  timer.skip();
+  assert.equal(timer.elapsedMs.get(), 1_234);
+  at(2_345);
+  timer.removeSegment('extra');
+  assert.equal(timer.elapsedMs.get(), 2_345);
+  timer.pause();
+  at(10_000);
+  timer.skip();
+  assert.equal(timer.elapsedMs.get(), 2_345);
+  timer.reset();
+  assert.equal(timer.elapsedMs.get(), 0);
+  timer.start();
+  at(11_000);
+  timer.tick();
+  assert.equal(timer.elapsedMs.get(), 1_000);
+  timer.replaceSegments(DEFAULT_SEGMENTS);
+  assert.equal(timer.elapsedMs.get(), 0);
+  timer.start();
+  at(12_000);
+  timer.tick();
+  assert.equal(timer.elapsedMs.get(), 1_000);
 });
 
 test('uses deadlines and catches up to the correct interval, remainder, and round', () => {

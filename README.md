@@ -32,6 +32,7 @@ npm run deploy
 
 - Start with 40 seconds of Work and 5 seconds of Rest. The sequence repeats until paused or reset.
 - The “cycles complete” count below the intervals advances only when the entire sequence wraps. Advancing with **Next interval** also counts a wrap.
+- “Total time” counts actual running time across intervals and cycles, excluding pauses and skipped durations. Resetting or saving an edited routine clears it.
 - Intervals stay in one centered row, expanding to the page edges as needed. Overflow scrolls horizontally with a hidden scrollbar; focus the row and use Left/Right or Home/End. The active interval scrolls into view without moving the timer controls.
 - The active interval is revealed on start/resume, interval or cycle changes, and resize. Supported browsers use [`scrollIntoViewIfNeeded(false)`](https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollIntoViewIfNeeded); a horizontal-only fallback handles other browsers and rows outside the viewport without moving the page.
 - **Edit intervals** pauses a running timer. Add, remove, or rename intervals; set each duration from 1 to 3,600 whole seconds; choose Work or Rest chimes. Saving resets the timer and cycle count. Cancel preserves the previous routine and leaves the timer paused.
@@ -39,6 +40,7 @@ npm run deploy
 - Intervals and the sound preference are saved in this browser. Reloading starts a fresh timer.
 - Press **Space** to start or pause when you are not using a field or button. Start, pause, reset, and next interval also have keyboard-accessible buttons.
 - Press **M** to toggle sound. Keyboard shortcuts stay inactive while editing intervals.
+- When sound is on, the header slider adjusts chime volume from 0 to 100. Volume is saved on this device and retained when sound is toggled off and on.
 
 Work ends with five equal 180ms notes: **G4, D4, D4, G4, D4**. Rest plays **C4** at 2 seconds remaining, **C4** at 1 second, and **C5** at zero. A shorter Rest interval plays only the countdown cues that fall inside it. The next segment starts immediately at the boundary; the alarm does not add extra time.
 

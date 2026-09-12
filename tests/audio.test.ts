@@ -4,7 +4,8 @@ import { BrowserAudio, NOTE_FREQUENCIES } from '../src/audio.ts';
 
 function fakeContext(initialState = 'running') {
   const voices: { frequency: number; start: number; stops: (number | undefined)[]; disconnected: boolean }[] = [];
-  const gains: { values: number[]; disconnected: boolean; cancelled: boolean }[] = [];
+  const gains: { values: number[]; disconnected: boolean; cancelled: boolean; connectedTo?: unknown }[] = [];
+  const gainNodes: unknown[] = [];
   const context = {
     state: initialState,
     currentTime: 12.5,
@@ -25,21 +26,24 @@ function fakeContext(initialState = 'running') {
       };
     },
     createGain() {
-      const gain = { values: [] as number[], disconnected: false, cancelled: false };
+      const gain = { values: [] as number[], disconnected: false, cancelled: false, connectedTo: undefined as unknown };
       gains.push(gain);
-      return {
+      const node = {
         gain: {
           setValueAtTime(value: number) { gain.values.push(value); },
+          setTargetAtTime(value: number) { gain.values.push(value); },
           linearRampToValueAtTime(value: number) { gain.values.push(value); },
           exponentialRampToValueAtTime(value: number) { gain.values.push(value); },
           cancelScheduledValues() { gain.cancelled = true; },
         },
-        connect() {},
+        connect(destination: unknown) { gain.connectedTo = destination; },
         disconnect() { gain.disconnected = true; },
       };
+      gainNodes.push(node);
+      return node;
     },
   };
-  return { context, voices, gains };
+  return { context, voices, gains, gainNodes };
 }
 
 test('unlocks a suspended audio context and translates deadlines onto its audio clock', async () => {
@@ -70,9 +74,36 @@ test('cancel stops and disconnects all current and future notes, silencing envel
   audio.cancel();
   assert.ok(voices.every((voice) => voice.stops.length === 2 && voice.stops[1] === undefined));
   assert.ok(voices.every((voice) => voice.disconnected));
-  assert.ok(gains.every((gain) => gain.cancelled && gain.disconnected && gain.values.at(-1) === 0));
+  assert.ok(gains.slice(1).every((gain) => gain.cancelled && gain.disconnected && gain.values.at(-1) === 0));
+  assert.equal(gains[0]!.disconnected, false);
   audio.cancel();
   assert.ok(voices.every((voice) => voice.stops.length === 2));
+});
+
+test('volume controls a shared output for existing and future chimes, including zero', async () => {
+  const { context, voices, gains, gainNodes } = fakeContext();
+  const audio = new BrowserAudio({ contextFactory: () => context as unknown as AudioContext });
+  audio.setVolume(0.4);
+  assert.equal(gains.length, 0);
+  await audio.unlock();
+  assert.deepEqual(gains[0]!.values, [0.4]);
+  assert.equal(gains[0]!.connectedTo, context.destination);
+  audio.schedule([
+    { atMs: 0, note: 'G4', durationMs: 180 },
+    { atMs: 40_000, note: 'D4', durationMs: 180 },
+  ], 0);
+  assert.ok(gains.slice(1).every(gain => gain.connectedTo === gainNodes[0]));
+  const starts = voices.map(voice => voice.start);
+  audio.setVolume(0);
+  audio.setVolume(0.7);
+  audio.setVolume(2);
+  audio.setVolume(-1);
+  audio.setVolume(NaN);
+  assert.deepEqual(gains[0]!.values, [0.4, 0, 0.7, 1, 0]);
+  assert.deepEqual(voices.map(voice => voice.start), starts);
+  assert.ok(voices.every(voice => voice.stops.length === 1));
+  audio.dispose();
+  assert.equal(gains[0]!.disconnected, true);
 });
 
 test('ignores historical notes and remains usable when audio cannot be initialized', async () => {

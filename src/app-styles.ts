@@ -4,11 +4,17 @@ export const appStyles = css`
   :host { display: block; min-height: 100svh; --accent: #477a35; --accent-soft: #e8efdf; --muted: #6b7468; }
   * { box-sizing: border-box; }
   .page { --page-gutter: 40px; min-height: 100svh; display: flex; flex-direction: column; padding: 0 var(--page-gutter); }
-  header { display: flex; align-items: center; justify-content: space-between; height: 100px; width: 100%; max-width: 1184px; margin: 0 auto; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 100px; width: 100%; max-width: 1184px; margin: 0 auto; }
   .brand { display: flex; align-items: center; gap: 10px; color: #283325; font-size: 17px; font-weight: 650; letter-spacing: -.65px; }
   .brand-mark { width: 29px; height: 29px; color: #477a35; }
   .sound { color: var(--muted); }
+  .sound-controls { display: flex; align-items: center; gap: 12px; }
+  .volume { position: relative; inline-size: 128px; --en-field-gap: 0px; }
+  .volume::part(row) { gap: 6px; }
+  .volume::part(output) { min-inline-size: 3ch; font-size: 12px; text-align: end; }
+  .volume::part(label) { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .sound::part(control) { font-size: 12px; font-weight: 500; gap: 8px; }
+  .sound::part(label) { inline-size: 5em; white-space: nowrap; }
   svg.icon { width: 20px; height: 20px; flex-shrink: 0; display: block; }
   main { flex: 1; display: flex; align-items: center; flex-direction: column; justify-content: center; width: 100%; padding: 30px 0 70px; }
   .dial { position: relative; width: min(360px, 84vw); aspect-ratio: 1; display: grid; place-items: center; }
@@ -29,7 +35,7 @@ export const appStyles = css`
   .next strong { font-weight: 500; color: #35412f; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
   .next .icon { width: 13px; height: 13px; margin-left: 3px; }
   .actions { display: flex; align-items: center; justify-content: center; gap: 15px; min-height: 56px; }
-  .primary::part(control) { min-width: 190px; min-height: 54px; font-size: 14px; gap: 10px; font-weight: 550; box-shadow: 0 3px 4px #24302008; }
+  .primary::part(control) { min-width: 190px; min-height: 68px; font-size: 18px; gap: 10px; font-weight: 550; box-shadow: rgba(36, 48, 32, 0.03) 0px 3px 4px; }
   .aux::part(control) { color: #687260; min-height: 44px; min-width: 44px; }
   .shortcut { font: inherit; font-size: 10px; line-height: 1; letter-spacing: .2px; white-space: nowrap; padding: 4px 5px; border: 1px solid #ffffff66; border-radius: 4px; color: #fff; background: #0000000a; }
   .sound .shortcut { color: #626c5c; border-color: #c9d2c2; background: transparent; }
@@ -54,6 +60,7 @@ export const appStyles = css`
   .repeat-note { margin: 12px 0 0; display: flex; justify-content: center; align-items: center; gap: 5px; color: #626c5c; font-size: 10px; }
   .repeat-note .icon { width: 12px; height: 12px; }
   .completed-cycles { font-weight: 600; color: #596650; }
+  .total-time { font-variant-numeric: tabular-nums; white-space: nowrap; }
   .resting { --accent: #967330; --accent-soft: #f4ebd6; }
   .resting .primary { --en-color-action: #896b2d; --en-color-action-hover: #725824; --en-color-action-pressed: #5e481d; }
   .audio-notice { color: #806025; font-size: 12px; max-width: 340px; text-align: center; margin: 16px 0 0; }
@@ -65,7 +72,7 @@ export const appStyles = css`
   .editor-row { display: grid; grid-template-columns: minmax(100px,1fr) 180px 120px 36px; gap: 10px; align-items: end; padding-bottom: 16px; border-bottom: 1px solid #e1e6db; }
   en-text-field, en-number-field, en-select { min-width: 0; --en-font-label-strong-weight: 500; }
   .remove { align-self: end; }
-  .remove::part(control) { min-width: 36px; min-height: 40px; color: #6b7468; }
+  .remove::part(control) { color: #6b7468; }
   .add { margin-top: 17px; }
   .add::part(control) { font-size: 12px; }
   .editor-footer { display: flex; align-items: center; justify-content: flex-end; gap: 9px; width: 100%; }
@@ -77,6 +84,8 @@ export const appStyles = css`
   @media (max-width: 600px) {
     .page { --page-gutter: 24px; }
     header { height: 78px; }
+    .volume { inline-size: clamp(64px, 24vw, 128px); }
+    .brand span { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     main { padding: 28px 0 45px; }
     .routine { margin-top: 34px; }
     .editor-row { grid-template-columns: minmax(0,1fr) 180px 36px; }

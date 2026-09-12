@@ -52,6 +52,46 @@ test('starts with two intervals and no completed cycles', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Progress Report' })).toHaveCount(0);
 });
 
+test('volume slider controls persisted volume and appears only while sound is on', async ({ page }, testInfo) => {
+  const slider = page.getByRole('slider', { name: 'Volume', exact: true });
+  const output = page.locator('en-slider output');
+  await expect(slider).toHaveValue('100');
+  await expect(output).toHaveText('100');
+  await expect(page.locator('header').getByRole('spinbutton')).toHaveCount(0);
+  await slider.press('Home');
+  await expect(slider).toHaveValue('0');
+  await expect(output).toHaveText('0');
+  await slider.press('ArrowRight');
+  await expect(slider).toHaveValue('1');
+  await expect(output).toHaveText('1');
+  await expect(slider).not.toHaveAttribute('aria-valuetext', /%/);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('tabata-time:v1')!).volume)).toBe(1);
+  const soundWidth = (await button(page, 'Sound on').boundingBox())!.width;
+  await button(page, 'Sound on').click();
+  await expect(slider).toHaveCount(0);
+  expect((await button(page, 'Sound off').boundingBox())!.width).toBe(soundWidth);
+  await page.reload();
+  await expect(slider).toHaveCount(0);
+  await button(page, 'Sound off').click();
+  await expect(slider).toHaveValue('1');
+  expect((await button(page, 'Sound on').boundingBox())!.width).toBe(soundWidth);
+  await page.reload();
+  await expect(slider).toHaveValue('1');
+  await slider.press('End');
+  await expect(output).toHaveText('100');
+  for (const width of [1280, 375, 320]) {
+    await page.setViewportSize({ width, height: 812 });
+    const range = await slider.boundingBox();
+    const sound = await button(page, 'Sound on').boundingBox();
+    const number = await output.boundingBox();
+    expect(number!.x + number!.width).toBeLessThanOrEqual(sound!.x);
+    expect(range!.x + range!.width).toBeLessThanOrEqual(sound!.x);
+    expect(Math.abs(range!.y + range!.height / 2 - sound!.y - sound!.height / 2)).toBeLessThan(2);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+    if (testInfo.project.name === 'chromium') await page.screenshot({ path: testInfo.outputPath(`volume-${width}.png`) });
+  }
+});
+
 test('counts a cycle only after every default interval finishes', async ({ page }) => {
   await startSilentClock(page);
   await page.clock.fastForward(39_000);
@@ -74,6 +114,32 @@ test('counts a cycle only after every default interval finishes', async ({ page 
   // A tab that resumes after several cycles still reports the correct completed count.
   await page.clock.fastForward(135_000);
   await expect(page.locator('.completed-cycles')).toHaveText('4 cycles complete');
+});
+
+test('total time counts across cycles, pauses, resumes, and resets without layout overflow', async ({ page }, testInfo) => {
+  const total = page.locator('.repeat-note .total-time');
+  await expect(total).toHaveText('00:00 total time');
+  await startSilentClock(page);
+  await page.clock.fastForward(1_234);
+  await expect(total).toHaveText('00:01 total time');
+  await page.clock.fastForward(43_766);
+  await expect(total).toHaveText('00:45 total time');
+  await expect(page.locator('.completed-cycles')).toHaveText('1 cycle complete');
+  await button(page, 'Pause').click();
+  await page.clock.fastForward(60_000);
+  await expect(total).toHaveText('00:45 total time');
+  await button(page, 'Resume').click();
+  await page.clock.fastForward(1_000);
+  await button(page, 'Next interval').click();
+  await expect(total).toHaveText('00:46 total time');
+  await page.setViewportSize({ width: 320, height: 812 });
+  await expect(total).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
+  const note = page.locator('.repeat-note');
+  expect(await note.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+  if (testInfo.project.name === 'chromium') await page.screenshot({ path: testInfo.outputPath('total-time-320.png') });
+  await button(page, 'Reset timer').click();
+  await expect(total).toHaveText('00:00 total time');
 });
 
 test('pause preserves remaining time, resume continues, and reset clears progress', async ({ page }) => {

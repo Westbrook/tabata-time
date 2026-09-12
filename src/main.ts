@@ -8,6 +8,7 @@ import '@en-reve/elements/define/number-field.js';
 import '@en-reve/elements/define/text-field.js';
 import '@en-reve/elements/define/select.js';
 import '@en-reve/elements/define/dialog.js';
+import '@en-reve/elements/define/slider.js';
 import type { EnDialog } from '@en-reve/elements/dialog.js';
 import { TabataTimer, DEFAULT_SEGMENTS, type Segment, type TimerStatus } from './timer.ts';
 import { BrowserAudio } from './audio.ts';
@@ -29,6 +30,7 @@ export function formatTime(seconds: number): string {
 class TabataApp extends LitElement {
   static override styles = appStyles;
   private readonly audio = new BrowserAudio();
+  private readonly volume = new Signal.State(100);
   readonly timer = this.createTimer();
   private readonly editing = new Signal.State(false);
   private readonly draft = new Signal.State<DraftSegment[]>([]);
@@ -48,6 +50,10 @@ class TabataApp extends LitElement {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
       const timer = new TabataTimer({ audio: this.audio, segments: saved?.segments ?? DEFAULT_SEGMENTS });
       timer.setMuted(saved?.muted === true);
+      if (typeof saved?.volume === 'number' && Number.isFinite(saved.volume)) {
+        this.volume.set(Math.round(Math.max(0, Math.min(100, saved.volume))));
+      }
+      this.audio.setVolume(this.volume.get() / 100);
       return timer;
     } catch {
       return new TabataTimer({ audio: this.audio });
@@ -62,7 +68,9 @@ class TabataApp extends LitElement {
       this.timer.index.get();
       this.timer.round.get();
       this.timer.remainingMs.get();
+      this.timer.elapsedMs.get();
       this.timer.muted.get();
+      this.volume.get();
       this.editing.get();
       this.draft.get();
       this.error.get();
@@ -154,7 +162,7 @@ class TabataApp extends LitElement {
 
   private persist(): void {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ segments: this.timer.segments.get(), muted: this.timer.muted.get() }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ segments: this.timer.segments.get(), muted: this.timer.muted.get(), volume: this.volume.get() }));
     } catch { /* The timer remains usable when browser storage is unavailable. */ }
   }
 
@@ -217,6 +225,14 @@ class TabataApp extends LitElement {
     }
     this.audioNotice.set('');
     this.timer.setMuted(!wasMuted);
+    this.persist();
+  }
+
+  private changeVolume(event: CustomEvent<{ proposed: number }>): void {
+    const value = event.detail.proposed;
+    if (!Number.isFinite(value)) return;
+    this.volume.set(Math.round(Math.max(0, Math.min(100, value))));
+    this.audio.setVolume(this.volume.get() / 100);
     this.persist();
   }
 
@@ -302,11 +318,14 @@ class TabataApp extends LitElement {
             <svg class="brand-mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="16" cy="18" r="10.5"/><path d="M16 18v-6m-3-9h6m-3 0v4m8 2 2-2"/></svg>
             <span>tabata time</span>
           </div>
-          <en-button class="sound" variant="ghost" @click=${this.toggleSound}>
+          <div class="sound-controls">
+            ${!muted ? html`<en-slider class="volume" label="Volume" min="0" max="100" step="1" show-value .value=${this.volume.get()} .editable=${false} @en-change=${this.changeVolume}></en-slider>` : nothing}
+            <en-button class="sound" variant="ghost" @click=${this.toggleSound}>
             ${icon(muted ? 'mute' : 'sound', 'prefix')}
             <span slot="label">Sound ${muted ? 'off' : 'on'}</span>
             <kbd class="shortcut" slot="suffix" aria-hidden="true">m</kbd>
-          </en-button>
+            </en-button>
+          </div>
         </header>
         <main>
           <div class="dial">
@@ -340,7 +359,7 @@ class TabataApp extends LitElement {
                 <span class="segment-duration">${segment.duration}s</span>
               </li>
             `)}</ol>
-            <p class="repeat-note">${icon('repeat')}<span>${formatTime(timer.totalDuration.get())} per cycle</span><span aria-hidden="true">·</span><span class="completed-cycles" role="status" aria-live="polite" aria-atomic="true">${completed} ${completed === 1 ? 'cycle' : 'cycles'} complete</span></p>
+            <p class="repeat-note">${icon('repeat')}<span>${formatTime(timer.totalDuration.get())} per cycle</span><span aria-hidden="true">·</span><span class="completed-cycles" role="status" aria-live="polite" aria-atomic="true">${completed} ${completed === 1 ? 'cycle' : 'cycles'} complete</span><span aria-hidden="true">·</span><span class="total-time">${formatTime(Math.floor(timer.elapsedMs.get() / 1000))} total time</span></p>
           </section>
           ${this.audioNotice.get() ? html`<p class="audio-notice" role="status">${this.audioNotice.get()}</p>` : nothing}
           <p class="sr-only" role="status" aria-live="polite">${status === 'idle' ? 'Ready' : status === 'paused' ? 'Paused' : active.name}.</p>

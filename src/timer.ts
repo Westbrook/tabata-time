@@ -48,6 +48,8 @@ export class TabataTimer {
   readonly index = new Signal.State(0);
   readonly round = new Signal.State(1);
   readonly remainingMs: Signal.State<number>;
+  /** Actual running time across intervals, excluding pauses and skipped durations. */
+  readonly elapsedMs = new Signal.State(0);
   readonly muted = new Signal.State(false);
   readonly activeSegment: Signal.Computed<Segment>;
   readonly nextSegment: Signal.Computed<Segment>;
@@ -58,6 +60,8 @@ export class TabataTimer {
   private readonly audio: AudioOutput | undefined;
   private readonly autoTick: boolean;
   private deadlineMs = 0;
+  private runStartedMs = 0;
+  private elapsedBeforeRunMs = 0;
   private interval: ReturnType<typeof setInterval> | undefined;
   private readonly scheduledNotes = new Map<string, number>();
 
@@ -82,6 +86,8 @@ export class TabataTimer {
   start(): void {
     if (this.status.get() === 'running') return;
     const now = this.now();
+    this.runStartedMs = now;
+    this.elapsedBeforeRunMs = this.elapsedMs.get();
     this.deadlineMs = now + this.remainingMs.get();
     this.status.set('running');
     this.scheduleAudio(now);
@@ -102,6 +108,7 @@ export class TabataTimer {
     this.status.set('idle');
     this.index.set(0);
     this.round.set(1);
+    this.elapsedMs.set(0);
     this.remainingMs.set(this.segments.get()[0]!.duration * 1000);
   }
 
@@ -160,6 +167,7 @@ export class TabataTimer {
     this.index.set(0);
     this.segments.set(validated);
     this.round.set(1);
+    this.elapsedMs.set(0);
     this.remainingMs.set(validated[0]!.duration * 1000);
   }
 
@@ -188,6 +196,7 @@ export class TabataTimer {
   }
 
   private updateClock(now: number): void {
+    this.elapsedMs.set(this.elapsedBeforeRunMs + Math.max(0, now - this.runStartedMs));
     const segments = this.segments.get();
     let index = this.index.get();
     let round = this.round.get();

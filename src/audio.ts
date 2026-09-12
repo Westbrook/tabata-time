@@ -26,6 +26,8 @@ interface BrowserAudioOptions {
 /** Schedules against the audio clock, independently of rendering or timer ticks. */
 export class BrowserAudio implements AudioOutput {
   private context: AudioContext | undefined;
+  private masterGain: GainNode | undefined;
+  private volume = 1;
   private readonly contextFactory: (() => AudioContext) | undefined;
   private readonly voices = new Map<OscillatorNode, GainNode>();
   private failed = false;
@@ -49,12 +51,25 @@ export class BrowserAudio implements AudioOutput {
   async unlock(): Promise<boolean> {
     if (!this.available) return false;
     try {
-      this.context ??= this.contextFactory!();
+      if (!this.context) {
+        this.context = this.contextFactory!();
+        this.masterGain = this.context.createGain();
+        this.masterGain.gain.setValueAtTime(this.volume, this.context.currentTime);
+        this.masterGain.connect(this.context.destination);
+      }
       if (this.context.state === 'suspended') await this.context.resume();
       return this.context.state === 'running';
     } catch {
       this.failed = true;
       return false;
+    }
+  }
+
+  setVolume(volume: number): void {
+    if (!Number.isFinite(volume)) return;
+    this.volume = Math.max(0, Math.min(1, volume));
+    if (this.context && this.masterGain) {
+      this.masterGain.gain.setTargetAtTime(this.volume, this.context.currentTime, 0.015);
     }
   }
 
@@ -77,7 +92,7 @@ export class BrowserAudio implements AudioOutput {
       gain.gain.exponentialRampToValueAtTime(0.035, start + duration * 0.7);
       gain.gain.linearRampToValueAtTime(0, start + duration);
       oscillator.connect(gain);
-      gain.connect(context.destination);
+      gain.connect(this.masterGain!);
       this.voices.set(oscillator, gain);
       oscillator.onended = () => {
         oscillator.disconnect();
@@ -102,6 +117,8 @@ export class BrowserAudio implements AudioOutput {
 
   dispose(): void {
     this.cancel();
+    this.masterGain?.disconnect();
+    this.masterGain = undefined;
     void this.context?.close();
     this.context = undefined;
   }
