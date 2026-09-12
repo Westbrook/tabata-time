@@ -1006,6 +1006,7 @@
   .digits { font-size: clamp(62px, 18vw, 92px); line-height: 1; letter-spacing: -6px; font-weight: 450; font-variant-numeric: tabular-nums; color: #243020; margin-left: -5px; }
   .digits.long { font-size: 66px; }
   .dial-caption { color: var(--muted); font-size: 12px; margin: 18px 0 0; letter-spacing: .1px; }
+  .running .dial-caption { visibility: hidden; }
   .next-slot { block-size: 40px; flex-shrink: 0; display: grid; place-items: center; max-inline-size: 100%; }
   .next { color: var(--muted); margin: 0; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 20px; max-width: min(340px, 100%); }
   .next strong { font-weight: 500; color: #35412f; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
@@ -1113,7 +1114,7 @@
             <div class="dial-content">
               <h1 class="segment-label"><span class="segment-dot" aria-hidden="true"></span><span>${n.name}</span></h1>
               <div class="digits ${o.length>5?`long`:``}" role="timer" aria-label=${`${n.name}, ${Math.ceil(e.remainingMs.get()/1e3)} seconds remaining`} aria-live="off">${o}</div>
-              ${t===`running`?E:C`<p class="dial-caption">${t===`idle`?`Ready`:`Paused`}</p>`}
+              <p class="dial-caption">${t===`idle`?`Ready`:`Paused`}</p>
             </div>
           </div>
           <div class="next-slot">${i.length>2?C`<p class="next">Up next ${$(`arrow`)} <strong>${r.name}</strong><span>· ${r.duration}s</span></p>`:E}</div>
