@@ -318,7 +318,7 @@ class TabataApp extends LitElement {
             <div class="dial-content">
               <h1 class="segment-label"><span class="segment-dot" aria-hidden="true"></span><span>${active.name}</span></h1>
               <div class="digits ${time.length > 5 ? 'long' : ''}" role="timer" aria-label=${`${active.name}, ${Math.ceil(timer.remainingMs.get() / 1000)} seconds remaining`} aria-live="off">${time}</div>
-              ${status !== 'running' ? html`<p class="dial-caption">${status === 'idle' ? 'Ready' : 'Paused'}</p>` : nothing}
+              <p class="dial-caption">${status === 'idle' ? 'Ready' : 'Paused'}</p>
             </div>
           </div>
           <div class="next-slot">${segments.length > 2 ? html`<p class="next">Up next ${icon('arrow')} <strong>${next.name}</strong><span>· ${next.duration}s</span></p>` : nothing}</div>

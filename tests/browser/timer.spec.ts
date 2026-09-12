@@ -95,6 +95,41 @@ test('pause preserves remaining time, resume continues, and reset clears progres
   await expect(page.locator('.completed-cycles')).toHaveText('0 cycles complete');
 });
 
+for (const viewport of [{ width: 1280, height: 900 }, { width: 375, height: 812 }]) {
+  test(`timer name and countdown remain fixed at ${viewport.width}px`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    const caption = page.locator('.dial-caption');
+    await expect(caption).toHaveText('Ready');
+    await expect(caption).toBeVisible();
+    const bounds = () => page.locator('.segment-label, .digits').evaluateAll(elements => elements.map(element => {
+      const { x, y, width, height } = element.getBoundingClientRect();
+      return { x, y, width, height };
+    }));
+    const ready = await bounds();
+    await startSilentClock(page);
+    await expect(caption).toBeHidden();
+    expect(await bounds(), 'Starting must preserve the name and countdown geometry').toEqual(ready);
+    await page.clock.fastForward(1_000);
+    await expect(page.getByRole('timer')).toHaveText('00:39');
+    expect(await bounds(), 'Countdown ticks must preserve the name and countdown geometry').toEqual(ready);
+    await button(page, 'Pause').click();
+    await expect(button(page, 'Resume')).toBeVisible();
+    await expect(caption).toHaveText('Paused');
+    await expect(caption).toBeVisible();
+    expect(await bounds(), 'Pausing must preserve the name and countdown geometry').toEqual(ready);
+    await button(page, 'Resume').click();
+    await expect(button(page, 'Pause')).toBeVisible();
+    await expect(caption).toBeHidden();
+    expect(await bounds(), 'Resuming must preserve the name and countdown geometry').toEqual(ready);
+    await button(page, 'Reset timer').click();
+    await expect(button(page, 'Start timer')).toBeVisible();
+    await expect(page.getByRole('timer')).toHaveText('00:40');
+    await expect(caption).toHaveText('Ready');
+    await expect(caption).toBeVisible();
+    expect(await bounds(), 'Resetting must preserve the name and countdown geometry').toEqual(ready);
+  });
+}
+
 test('edits and persists names, durations, chimes, and extra intervals', async ({ page }) => {
   await openEditor(page);
   await page.getByRole('textbox', { name: 'Interval 1', exact: true }).fill('Sprint');
