@@ -1,0 +1,40 @@
+{
+  "name": "tabata-time",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/Westbrook/tabata-time.git"
+  },
+  "homepage": "https://westbrook.github.io/tabata-time/",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 4327 --strictPort",
+    "build": "tsc --noEmit && vite build",
+    "build:pages": "npm run build -- --base=/tabata-time/",
+    "deploy": "npm run build:pages && gh-pages --dist dist --branch gh-pages --dotfiles",
+    "preview": "vite preview --host 127.0.0.1 --port 4327 --strictPort",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "test:browser": "playwright test"
+  },
+  "dependencies": {
+    "@en-reve/elements": "file:vendor/en-reve-elements-0.1.0.tgz",
+    "@en-reve/primitives": "file:vendor/en-reve-primitives-0.1.0.tgz",
+    "@en-reve/styles": "file:vendor/en-reve-styles-0.1.0.tgz",
+    "@en-reve/tokens": "file:vendor/en-reve-tokens-0.1.0.tgz",
+    "lit": "3.3.3",
+    "signal-polyfill": "0.2.2",
+    "signal-utils": "0.21.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "1.63.0",
+    "@types/node": "^24.13.3",
+    "gh-pages": "6.3.0",
+    "typescript": "7.0.2",
+    "vite": "8.2.2"
+  }
+}

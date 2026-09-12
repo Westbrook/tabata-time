@@ -1,0 +1,30 @@
+@import '@en-reve/tokens/default.css';
+
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #19251c;
+  background: #f8f9f5;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --en-color-action: #477a35;
+  --en-color-action-hover: #396529;
+  --en-color-action-pressed: #2c5020;
+  --en-color-action-text: #3f6d30;
+  --en-color-on-action: #fff;
+  --en-color-focus: #477a35;
+  --en-color-focus-halo: #477a3520;
+  --en-color-text: #19251c;
+  --en-color-text-muted: #626e61;
+  --en-color-surface: #f8f9f5;
+  --en-color-surface-raised: #fff;
+  --en-color-surface-subtle: #eef1e9;
+  --en-color-border: #d8dfd0;
+  --en-input-background: #fff;
+  --en-button-radius: 999px;
+  --en-control-radius: 10px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 280px; }
+button, input { font: inherit; }
+::selection { background: #dfeacb; color: #19251c; }
