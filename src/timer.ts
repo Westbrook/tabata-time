@@ -25,7 +25,9 @@ interface TimerOptions {
 }
 
 const NOTE_DURATION_MS = 180;
-const WORK_NOTES: readonly NoteName[] = ['G4', 'D4', 'D4', 'G4', 'D4'];
+const REST_BASS_GAIN_SCALE = 0.125;
+const WORK_BASS_GAIN_SCALE = 0.03125;
+const WORK_NOTES: readonly NoteName[] = ['G5', 'D5', 'D5', 'G5', 'D5'];
 
 function validateSegments(segments: readonly Segment[]): readonly Segment[] {
   if (segments.length === 0) throw new Error('Add at least one interval.');
@@ -241,9 +243,29 @@ export class TabataTimer {
           }))
         : [2, 1, 0].map((seconds) => ({
             atMs: boundary - seconds * 1000,
-            note: seconds === 0 ? 'C5' as const : 'C4' as const,
-            durationMs: NOTE_DURATION_MS,
+            note: seconds === 0 ? 'C6' as const : 'C4' as const,
+            durationMs: seconds === 0 ? NOTE_DURATION_MS * 2 : NOTE_DURATION_MS,
           }));
+
+      if (segment.cue === 'rest') {
+        // Resume the held bass at the current time without replaying missed chimes.
+        const bassStart = Math.max(now, start, boundary - 2_000);
+        planned.push({
+          atMs: bassStart,
+          note: 'C3',
+          durationMs: boundary + NOTE_DURATION_MS * 2 - bassStart,
+          gainScale: REST_BASS_GAIN_SCALE,
+          sustained: true,
+        });
+      } else {
+        planned.push({
+          atMs: boundary,
+          note: 'G3',
+          durationMs: NOTE_DURATION_MS * WORK_NOTES.length,
+          gainScale: WORK_BASS_GAIN_SCALE,
+          sustained: true,
+        });
+      }
 
       for (const [offset, note] of planned.entries()) {
         const key = `${boundary}:${index}:${offset}`;

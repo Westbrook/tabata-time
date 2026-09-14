@@ -1,10 +1,16 @@
-export type NoteName = 'G4' | 'D4' | 'C4' | 'C5';
+export type NoteName = 'G3' | 'G5' | 'D5' | 'C3' | 'C4' | 'C6';
+
+export const DEFAULT_VOLUME = 70;
 
 export interface TimedNote {
   /** An absolute timestamp on the timer's monotonic clock. */
   atMs: number;
   note: NoteName;
   durationMs: number;
+  /** Relative to the normal chime's peak gain. */
+  gainScale?: number;
+  /** Hold the peak until a short release instead of decaying like a chime. */
+  sustained?: boolean;
 }
 
 export interface AudioOutput {
@@ -13,10 +19,12 @@ export interface AudioOutput {
 }
 
 export const NOTE_FREQUENCIES: Record<NoteName, number> = {
-  G4: 391.99543598174927,
-  D4: 293.6647679174076,
+  G3: 195.99771799087463,
+  G5: 783.9908719634985,
+  D5: 587.3295358348151,
+  C3: 130.8127826502993,
   C4: 261.6255653005986,
-  C5: 523.2511306011972,
+  C6: 1046.5022612023945,
 };
 
 interface BrowserAudioOptions {
@@ -27,7 +35,7 @@ interface BrowserAudioOptions {
 export class BrowserAudio implements AudioOutput {
   private context: AudioContext | undefined;
   private masterGain: GainNode | undefined;
-  private volume = 1;
+  private volume = DEFAULT_VOLUME / 100;
   private readonly contextFactory: (() => AudioContext) | undefined;
   private readonly voices = new Map<OscillatorNode, GainNode>();
   private failed = false;
@@ -87,9 +95,15 @@ export class BrowserAudio implements AudioOutput {
       const gain = context.createGain();
       oscillator.type = 'sine';
       oscillator.frequency.setValueAtTime(NOTE_FREQUENCIES[note.note], start);
+      const gainScale = note.gainScale ?? 1;
+      const peak = 0.22 * gainScale;
       gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(0.22, start + Math.min(0.012, duration / 5));
-      gain.gain.exponentialRampToValueAtTime(0.035, start + duration * 0.7);
+      gain.gain.linearRampToValueAtTime(peak, start + Math.min(0.012, duration / 5));
+      if (note.sustained) {
+        gain.gain.setValueAtTime(peak, start + duration - Math.min(0.025, duration / 5));
+      } else {
+        gain.gain.exponentialRampToValueAtTime(0.035 * gainScale, start + duration * 0.7);
+      }
       gain.gain.linearRampToValueAtTime(0, start + duration);
       oscillator.connect(gain);
       gain.connect(this.masterGain!);

@@ -180,20 +180,22 @@ test('pre-schedules the exact work melody and rest countdown at the requested bo
   timer.start();
   const firstRound = audio.notes.filter((note) => note.atMs <= 45_000);
   assert.deepEqual(firstRound, [
-    { atMs: 40_000, note: 'G4', durationMs: 180 },
-    { atMs: 40_180, note: 'D4', durationMs: 180 },
-    { atMs: 40_360, note: 'D4', durationMs: 180 },
-    { atMs: 40_540, note: 'G4', durationMs: 180 },
-    { atMs: 40_720, note: 'D4', durationMs: 180 },
+    { atMs: 40_000, note: 'G5', durationMs: 180 },
+    { atMs: 40_180, note: 'D5', durationMs: 180 },
+    { atMs: 40_360, note: 'D5', durationMs: 180 },
+    { atMs: 40_540, note: 'G5', durationMs: 180 },
+    { atMs: 40_720, note: 'D5', durationMs: 180 },
+    { atMs: 40_000, note: 'G3', durationMs: 900, gainScale: 0.03125, sustained: true },
     { atMs: 43_000, note: 'C4', durationMs: 180 },
     { atMs: 44_000, note: 'C4', durationMs: 180 },
-    { atMs: 45_000, note: 'C5', durationMs: 180 },
+    { atMs: 45_000, note: 'C6', durationMs: 360 },
+    { atMs: 43_000, note: 'C3', durationMs: 2_360, gainScale: 0.125, sustained: true },
   ]);
   at(39_999);
   timer.tick();
   at(40_000);
   timer.tick();
-  assert.equal(audio.notes.filter((note) => note.atMs === 40_000).length, 1);
+  assert.equal(audio.notes.filter((note) => note.atMs === 40_000).length, 2);
 });
 
 test('resuming a partly finished rest re-schedules only the remaining countdown', () => {
@@ -206,7 +208,8 @@ test('resuming a partly finished rest re-schedules only the remaining countdown'
   timer.start();
   assert.deepEqual(audio.notes.filter((note) => note.atMs <= 91_500), [
     { atMs: 90_500, note: 'C4', durationMs: 180 },
-    { atMs: 91_500, note: 'C5', durationMs: 180 },
+    { atMs: 91_500, note: 'C6', durationMs: 360 },
+    { atMs: 90_000, note: 'C3', durationMs: 1_860, gainScale: 0.125, sustained: true },
   ]);
 });
 
@@ -216,9 +219,10 @@ test('one-second rest does not chime before its start; its one/zero cues remain'
     { id: 'rest', name: 'Rest', duration: 1, cue: 'rest' },
   ]);
   timer.start();
-  assert.deepEqual(audio.notes.filter((note) => note.note.startsWith('C')).slice(0, 2), [
+  assert.deepEqual(audio.notes.filter((note) => note.note.startsWith('C')).slice(0, 3), [
     { atMs: 4_000, note: 'C4', durationMs: 180 },
-    { atMs: 5_000, note: 'C5', durationMs: 180 },
+    { atMs: 5_000, note: 'C6', durationMs: 360 },
+    { atMs: 4_000, note: 'C3', durationMs: 1_360, gainScale: 0.125, sustained: true },
   ]);
 });
 
@@ -234,7 +238,8 @@ test('muting cancels sound and unmuting never replays missed historical cues', (
   timer.setMuted(false);
   assert.deepEqual(audio.notes.filter((note) => note.atMs <= 45_000), [
     { atMs: 44_000, note: 'C4', durationMs: 180 },
-    { atMs: 45_000, note: 'C5', durationMs: 180 },
+    { atMs: 45_000, note: 'C6', durationMs: 360 },
+    { atMs: 43_500, note: 'C3', durationMs: 1_860, gainScale: 0.125, sustained: true },
   ]);
 });
 
@@ -284,14 +289,16 @@ test('deleting an earlier interval keeps the running identity, deadline, and com
   assert.equal(timer.totalDuration.get(), 25);
   assert.equal(audio.cancellations, 1);
   assert.deepEqual(audio.notes.filter((note) => note.atMs <= 70_000).map(({ atMs, note }) => ({ atMs, note })), [
-    { atMs: 65_000, note: 'G4' },
-    { atMs: 65_180, note: 'D4' },
-    { atMs: 65_360, note: 'D4' },
-    { atMs: 65_540, note: 'G4' },
-    { atMs: 65_720, note: 'D4' },
+    { atMs: 65_000, note: 'G5' },
+    { atMs: 65_180, note: 'D5' },
+    { atMs: 65_360, note: 'D5' },
+    { atMs: 65_540, note: 'G5' },
+    { atMs: 65_720, note: 'D5' },
+    { atMs: 65_000, note: 'G3' },
     { atMs: 68_000, note: 'C4' },
     { atMs: 69_000, note: 'C4' },
-    { atMs: 70_000, note: 'C5' },
+    { atMs: 70_000, note: 'C6' },
+    { atMs: 68_000, note: 'C3' },
   ]);
   at(70_000);
   timer.tick();
@@ -314,7 +321,7 @@ test('deleting the active running interval gives the following interval its full
   assert.deepEqual(audio.notes.slice(0, 3), [
     { atMs: 10_500, note: 'C4', durationMs: 180 },
     { atMs: 11_500, note: 'C4', durationMs: 180 },
-    { atMs: 12_500, note: 'C5', durationMs: 180 },
+    { atMs: 12_500, note: 'C6', durationMs: 360 },
   ]);
   at(12_500);
   timer.tick();
@@ -394,4 +401,34 @@ test('removal resolves an elapsed boundary before deciding whether it deletes th
   last.timer.tick();
   assert.equal(last.timer.activeSegment.get().id, 'rest');
   assert.equal(last.timer.remainingMs.get(), 5_000);
+});
+
+test('held bass is scheduled once across countdown ticks and the next interval boundary', () => {
+  const { timer, audio, at } = setup();
+  timer.start();
+  for (const time of [43_000, 43_500, 44_000, 45_000, 45_200, 45_400]) {
+    at(time);
+    timer.tick();
+  }
+  assert.deepEqual(audio.notes.filter(note => note.note === 'C3' && note.atMs < 45_500), [
+    { atMs: 43_000, note: 'C3', durationMs: 2_360, gainScale: 0.125, sustained: true },
+  ]);
+});
+
+test('held G3 spans the five work chimes without duplicate scheduling across the boundary', () => {
+  const { timer, audio, at } = setup();
+  timer.start();
+  for (const time of [39_900, 40_000, 40_200, 40_900, 41_000]) {
+    at(time);
+    timer.tick();
+  }
+  assert.deepEqual(audio.notes.filter(note => note.note === 'G3' && note.atMs < 41_000), [
+    { atMs: 40_000, note: 'G3', durationMs: 900, gainScale: 0.03125, sustained: true },
+  ]);
+  timer.pause();
+  assert.equal(audio.cancellations, 1);
+  audio.calls = [];
+  at(50_000);
+  timer.start();
+  assert.ok(audio.notes.filter(note => note.note === 'G3').every(note => note.atMs > 50_000));
 });

@@ -11,8 +11,9 @@ import '@en-reve/elements/define/dialog.js';
 import '@en-reve/elements/define/slider.js';
 import type { EnDialog } from '@en-reve/elements/dialog.js';
 import { TabataTimer, DEFAULT_SEGMENTS, type Segment, type TimerStatus } from './timer.ts';
-import { BrowserAudio } from './audio.ts';
+import { BrowserAudio, DEFAULT_VOLUME } from './audio.ts';
 import { appStyles } from './app-styles.ts';
+import { createDialMarks } from './dial.ts';
 import { icon } from './icons.ts';
 import './global.css';
 
@@ -30,7 +31,7 @@ export function formatTime(seconds: number): string {
 class TabataApp extends LitElement {
   static override styles = appStyles;
   private readonly audio = new BrowserAudio();
-  private readonly volume = new Signal.State(100);
+  private readonly volume = new Signal.State(DEFAULT_VOLUME);
   readonly timer = this.createTimer();
   private readonly editing = new Signal.State(false);
   private readonly draft = new Signal.State<DraftSegment[]>([]);
@@ -332,7 +333,7 @@ class TabataApp extends LitElement {
             <svg class="dial-svg" viewBox="0 0 360 360" aria-hidden="true">
               <circle class="dial-track" cx="180" cy="180" r="173" fill="none" stroke-width="4"/>
               <circle class="dial-progress" cx="180" cy="180" r="173" fill="none" stroke-width="4" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset=${timer.elapsedProgress.get() * 100}/>
-              <g class="dial-ticks">${Array.from({ length: 60 }, (_, i) => svg`<line x1="180" y1="23" x2="180" y2=${i % 5 === 0 ? 31 : 27} transform="rotate(${i * 6} 180 180)"/>`)}</g>
+              <g class="dial-ticks">${createDialMarks(active.duration).map(mark => svg`<line x1="337" y1="180" x2=${mark.major ? 329 : 333} y2="180" transform="rotate(${mark.angle} 180 180)"/>`)}</g>
             </svg>
             <div class="dial-content">
               <h1 class="segment-label"><span class="segment-dot" aria-hidden="true"></span><span>${active.name}</span></h1>

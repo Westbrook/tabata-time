@@ -40,9 +40,10 @@ npm run deploy
 - Intervals and the sound preference are saved in this browser. Reloading starts a fresh timer.
 - Press **Space** to start or pause when you are not using a field or button. Start, pause, reset, and next interval also have keyboard-accessible buttons.
 - Press **M** to toggle sound. Keyboard shortcuts stay inactive while editing intervals.
-- When sound is on, the header slider adjusts chime volume from 0 to 100. Volume is saved on this device and retained when sound is toggled off and on.
+- When sound is on, the header slider adjusts chime volume from 0 to 100. The default is 70. Volume is saved on this device and retained when sound is toggled off and on.
+- Dial marks represent the active interval's full duration and stay fixed during its countdown. Intervals shorter than 10 seconds use half-second marks, with longer marks at whole seconds. Intervals from 10 to 60 seconds use one-second marks; longer intervals use 5-, 10-, 30-, or 60-second spacing, with at most 60 marks. From 10 seconds upward, every fifth mark is longer; sparse dials use all long marks.
 
-Work ends with five equal 180ms notes: **G4, D4, D4, G4, D4**. Rest plays **C4** at 2 seconds remaining, **C4** at 1 second, and **C5** at zero. A shorter Rest interval plays only the countdown cues that fall inside it. The next segment starts immediately at the boundary; the alarm does not add extra time.
+Work ends with five equal 180ms notes: **G5, D5, D5, G5, D5**. A held **G3** at one-thirty-second of the chime peak gain accompanies all five notes (900ms). Rest plays **C4** at 2 seconds remaining, **C4** at 1 second, and **C6** at zero. Each C4 lasts 180ms; C6 lasts 360ms. A held **C3** at one-eighth of the chime peak gain accompanies the pattern from its first cue through the end of C6 (2.36 seconds for a full countdown). The bass is shortened for shorter rests or resumed countdowns. A shorter Rest interval plays only the countdown cues that fall inside it. The next segment starts immediately at the boundary; the alarm does not add extra time.
 
 The timer uses monotonic deadlines rather than decrementing counters. Chimes are scheduled ahead on the Web Audio clock and canceled on pause, reset, skip, or mute. A supported browser is asked to keep the screen awake while running. Browser and operating-system suspension can still silence background audio; returning to the page catches up the timer without replaying missed alarms.
 

@@ -55,8 +55,8 @@ test('starts with two intervals and no completed cycles', async ({ page }) => {
 test('volume slider controls persisted volume and appears only while sound is on', async ({ page }, testInfo) => {
   const slider = page.getByRole('slider', { name: 'Volume', exact: true });
   const output = page.locator('en-slider output');
-  await expect(slider).toHaveValue('100');
-  await expect(output).toHaveText('100');
+  await expect(slider).toHaveValue('70');
+  await expect(output).toHaveText('70');
   await expect(page.locator('header').getByRole('spinbutton')).toHaveCount(0);
   await slider.press('Home');
   await expect(slider).toHaveValue('0');
@@ -691,3 +691,43 @@ test('timer and editor pass automated accessibility checks', async ({ page }) =>
   await openEditor(page);
   expect.soft((await scan()).violations).toEqual([]);
 });
+
+for (const width of [1280, 320]) {
+  test(`dial marks follow interval duration and remain fixed during countdown at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    const marks = page.locator('.dial-ticks line');
+    const geometry = () => marks.evaluateAll(lines => lines.map(line => [line.getAttribute('transform'), line.getAttribute('x2')]));
+    await expect(marks).toHaveCount(40);
+    await expect(page.locator('.dial-ticks line[x2="329"]')).toHaveCount(8);
+    const workGeometry = await geometry();
+    // The SVG rotates -90 degrees; a mark starting on its right edge lands at the top.
+    await expect(marks.first()).toHaveAttribute('x1', '337');
+    await expect(marks.first()).toHaveAttribute('transform', 'rotate(0 180 180)');
+    await startSilentClock(page);
+    await page.clock.fastForward(12_000);
+    expect(await geometry()).toEqual(workGeometry);
+    await button(page, 'Pause').click();
+    expect(await geometry()).toEqual(workGeometry);
+    if (testInfo.project.name === 'chromium') await page.screenshot({ path: testInfo.outputPath(`dial-work-${width}.png`) });
+    await button(page, 'Resume').click();
+    await page.clock.fastForward(28_000);
+    await expect(marks).toHaveCount(10);
+    await expect(page.locator('.dial-ticks line[x2="329"]')).toHaveCount(5);
+    await expect(page.locator('.dial-ticks line[x2="333"]')).toHaveCount(5);
+    await expect(marks.nth(1)).toHaveAttribute('transform', 'rotate(36 180 180)');
+    const restGeometry = await geometry();
+    await page.clock.fastForward(2_000);
+    expect(await geometry()).toEqual(restGeometry);
+    if (testInfo.project.name === 'chromium') await page.screenshot({ path: testInfo.outputPath(`dial-rest-${width}.png`) });
+    await page.clock.fastForward(3_000);
+    expect(await geometry()).toEqual(workGeometry);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+    await button(page, 'Reset timer').click();
+    await openEditor(page);
+    await seconds(page).nth(0).fill('301');
+    await button(page, 'Save intervals').click();
+    await expect(marks).toHaveCount(30);
+    await expect(marks.nth(1)).toHaveAttribute('transform', `rotate(${10 / 301 * 360} 180 180)`);
+    if (testInfo.project.name === 'chromium') await page.screenshot({ path: testInfo.outputPath(`dial-long-${width}.png`) });
+  });
+}
