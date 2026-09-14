@@ -42,7 +42,7 @@ test.beforeEach(async ({ page }) => {
 
 test('starts with two intervals and no completed cycles', async ({ page }) => {
   await expect(intervalRows(page)).toHaveCount(2);
-  await expect(intervalRows(page)).toHaveText(['Work40s', 'Rest5s']);
+  await expect(intervalRows(page)).toHaveText(['Work 40s', 'Rest 5s']);
   await expect(page.getByRole('timer')).toHaveText('00:40');
   await expect(page.locator('.completed-cycles')).toHaveText('0 cycles complete');
   await expect(page.getByText(/^Cycle \d+$/)).toHaveCount(0);
@@ -235,7 +235,7 @@ test('removes intervals while retaining at least one usable interval', async ({ 
   await expect(page.getByRole('textbox', { name: 'Interval 1', exact: true })).toHaveValue('Rest');
   await expect(button(page, 'Remove interval 1')).toBeDisabled();
   await button(page, 'Save intervals').click();
-  await expect(intervalRows(page)).toHaveText(['Rest5s']);
+  await expect(intervalRows(page)).toHaveText(['Rest 5s']);
   await startSilentClock(page);
   await page.clock.fastForward(5_000);
   await expect(page.locator('.completed-cycles')).toHaveText('1 cycle complete');
@@ -255,7 +255,7 @@ test('rejects missing names and empty, zero, or fractional durations without sav
   }
   await button(page, 'Cancel').click();
   await page.reload();
-  await expect(intervalRows(page)).toHaveText(['Work40s', 'Rest5s']);
+  await expect(intervalRows(page)).toHaveText(['Work 40s', 'Rest 5s']);
 });
 
 test('editor pauses the timer and Cancel or Escape discards drafts and returns focus', async ({ page }) => {
@@ -268,14 +268,14 @@ test('editor pauses the timer and Cancel or Escape discards drafts and returns f
   await expect(button(page, 'Edit intervals')).toBeFocused();
   await expect(button(page, 'Resume')).toBeVisible();
   await expect(page.getByRole('timer')).toHaveText('00:36');
-  await expect(intervalRows(page)).toHaveText(['Work40s', 'Rest5s']);
+  await expect(intervalRows(page)).toHaveText(['Work 40s', 'Rest 5s']);
   await openEditor(page);
   await expect(page.getByRole('textbox', { name: 'Interval 1', exact: true })).toHaveValue('Work');
   await page.getByRole('textbox', { name: 'Interval 1', exact: true }).fill('Also discarded');
   await page.keyboard.press('Escape');
   await expect(editor(page)).not.toBeVisible();
   await expect(button(page, 'Edit intervals')).toBeFocused();
-  await expect(intervalRows(page)).toHaveText(['Work40s', 'Rest5s']);
+  await expect(intervalRows(page)).toHaveText(['Work 40s', 'Rest 5s']);
 });
 
 test('Space toggles the timer from the page and remains text inside the editor', async ({ page }) => {
