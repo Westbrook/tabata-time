@@ -70,7 +70,7 @@ export const appStyles = css`
   en-dialog::part(surface) { width: min(640px, calc(100vw - 32px)); max-inline-size: min(640px, calc(100vw - 32px)); }
   .editor-intro { margin: 0 0 22px; font-size: 13px; line-height: 1.6; color: #626e61; }
   .editor-rows { display: flex; flex-direction: column; gap: 16px; }
-  .editor-row { display: grid; grid-template-columns: minmax(100px,1fr) 180px 120px 36px; gap: 10px; align-items: end; padding-bottom: 16px; border-bottom: 1px solid #e1e6db; }
+  .editor-row { display: grid; grid-template-columns: minmax(100px,1fr) 180px 120px max-content; gap: 10px; align-items: end; padding-bottom: 16px; border-bottom: 1px solid #e1e6db; }
   en-text-field, en-number-field, en-select { min-width: 0; --en-font-label-strong-weight: 500; }
   .remove { align-self: end; }
   .remove::part(control) { color: #6b7468; }
@@ -89,12 +89,12 @@ export const appStyles = css`
     .brand span { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     main { padding: 28px 0 45px; }
     .routine { margin-top: 34px; }
-    .editor-row { grid-template-columns: minmax(0,1fr) 180px 36px; }
+    .editor-row { grid-template-columns: minmax(0,1fr) 180px max-content; }
     .editor-row en-select { grid-column: 1 / 3; }
     .editor-row .remove { grid-column: 3; grid-row: 1; }
   }
   @media (max-width: 420px) {
-    .editor-row { grid-template-columns: minmax(0,1fr) 36px; gap: 12px; }
+    .editor-row { grid-template-columns: minmax(0,1fr) max-content; gap: 12px; }
     .editor-row en-text-field { grid-column: 1; grid-row: 1; }
     .editor-row .remove { grid-column: 2; grid-row: 1; }
     .editor-row en-number-field { grid-column: 1 / -1; grid-row: 2; }

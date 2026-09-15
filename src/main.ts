@@ -287,7 +287,21 @@ class TabataApp extends LitElement {
     }
   }
 
-  private saveSegments(): void {
+  private submitEditor(): void {
+    this.renderRoot.querySelector<HTMLFormElement>('#interval-editor')?.requestSubmit();
+  }
+
+  private onEditorKeyDown(event: KeyboardEvent): void {
+    const input = event.composedPath()[0];
+    if (event.key !== 'Enter' || event.isComposing || event.defaultPrevented
+      || !(input instanceof HTMLInputElement) || input.type !== 'number') return;
+    // The number field's shadow input cannot implicitly submit its host's form.
+    event.preventDefault();
+    this.submitEditor();
+  }
+
+  private saveSegments(event: SubmitEvent): void {
+    event.preventDefault();
     const segments = this.draft.get().map(segment => ({ ...segment, name: segment.name.trim(), duration: Number(segment.duration) }));
     if (segments.some(segment => !segment.name || segment.name.length > 40)) {
       this.error.set('Give each interval a name, up to 40 characters.');
@@ -375,24 +389,26 @@ class TabataApp extends LitElement {
     return html`<en-dialog label="Your intervals" closedby="closerequest" @en-change=${(event: CustomEvent<{proposed: boolean}>) => {
       if (event.target === event.currentTarget) this.editing.set(event.detail.proposed);
     }}>
-      <p class="editor-intro">Each cycle plays these intervals in order, then repeats.</p>
-      <div class="editor-rows">${repeat(this.draft.get(), segment => segment.id, (segment, i) => html`
-        <div class="editor-row">
-          <en-text-field label=${`Interval ${i + 1}`} .value=${segment.name} maxlength="40" required @en-input=${(e: FieldEvent) => this.changeDraft(segment.id, 'name', e)}></en-text-field>
-          <en-number-field label="Seconds" min="1" max="3600" step="1" .value=${segment.duration} required
-            decrement-label=${`Shorten interval ${i + 1}`} increment-label=${`Lengthen interval ${i + 1}`}
-            @en-input=${(e: FieldEvent) => this.changeDraft(segment.id, 'duration', e)}
-            @en-change=${(e: FieldEvent) => this.changeDraft(segment.id, 'duration', e)}></en-number-field>
-          <en-select label="Chime" .value=${segment.cue} .items=${[{ value: 'work', label: 'Work' }, { value: 'rest', label: 'Rest' }]} @en-change=${(e: FieldEvent) => this.changeDraft(segment.id, 'cue', e)}></en-select>
-          <en-button class="remove" variant="ghost" icon-only ?disabled=${this.draft.get().length <= 1} @click=${() => this.draft.set(this.draft.get().filter(item => item.id !== segment.id))}>
-            <en-icon slot="prefix" name="close"></en-icon><span slot="label">Remove interval ${i + 1}</span>
-          </en-button>
-        </div>
-      `)}</div>
-      <en-button class="add" variant="ghost" @click=${this.addSegment}><en-icon slot="prefix" name="plus"></en-icon><span slot="label">Add interval</span></en-button>
-      ${this.error.get() ? html`<p class="error" role="alert">${this.error.get()}</p>` : nothing}
-      <p class="cue-notes">Work: five notes at the end. Rest: a countdown at 2, 1, and 0 seconds.<br>Saving starts a fresh cycle. Your intervals are saved on this device.</p>
-      <div class="editor-footer" slot="footer"><en-button variant="ghost" @click=${this.closeEditor}>Cancel</en-button><en-button @click=${this.saveSegments}>Save intervals</en-button></div>
+      <form id="interval-editor" novalidate @submit=${this.saveSegments} @keydown=${this.onEditorKeyDown}>
+        <p class="editor-intro">Each cycle plays these intervals in order, then repeats.</p>
+        <div class="editor-rows">${repeat(this.draft.get(), segment => segment.id, (segment, i) => html`
+          <div class="editor-row">
+            <en-text-field label=${`Interval ${i + 1}`} .value=${segment.name} maxlength="40" required @en-input=${(e: FieldEvent) => this.changeDraft(segment.id, 'name', e)}></en-text-field>
+            <en-number-field label="Seconds" min="1" max="3600" step="1" .value=${segment.duration} required
+              decrement-label=${`Shorten interval ${i + 1}`} increment-label=${`Lengthen interval ${i + 1}`}
+              @en-input=${(e: FieldEvent) => this.changeDraft(segment.id, 'duration', e)}
+              @en-change=${(e: FieldEvent) => this.changeDraft(segment.id, 'duration', e)}></en-number-field>
+            <en-select label="Chime" .value=${segment.cue} .items=${[{ value: 'work', label: 'Work' }, { value: 'rest', label: 'Rest' }]} @en-change=${(e: FieldEvent) => this.changeDraft(segment.id, 'cue', e)}></en-select>
+            <en-button class="remove" variant="ghost" icon-only ?disabled=${this.draft.get().length <= 1} @click=${() => this.draft.set(this.draft.get().filter(item => item.id !== segment.id))}>
+              <en-icon slot="prefix" name="close"></en-icon><span slot="label">Remove interval ${i + 1}</span>
+            </en-button>
+          </div>
+        `)}</div>
+        <en-button class="add" variant="ghost" @click=${this.addSegment}><en-icon slot="prefix" name="plus"></en-icon><span slot="label">Add interval</span></en-button>
+        ${this.error.get() ? html`<p class="error" role="alert">${this.error.get()}</p>` : nothing}
+        <p class="cue-notes">Work: five notes at the end. Rest: a countdown at 2, 1, and 0 seconds.<br>Saving starts a fresh cycle. Your intervals are saved on this device.</p>
+      </form>
+      <div class="editor-footer" slot="footer"><en-button variant="ghost" @click=${this.closeEditor}>Cancel</en-button><en-button @click=${this.submitEditor}>Save intervals</en-button></div>
     </en-dialog>`;
   }
 }

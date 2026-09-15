@@ -229,6 +229,38 @@ test('edits and persists names, durations, chimes, and extra intervals', async (
   await expect(page.locator('.completed-cycles')).toHaveText('1 cycle complete');
 });
 
+test('Enter in every duration field saves current edits without navigating and persists them', async ({ page }) => {
+  const navigations: string[] = [];
+  page.on('framenavigated', frame => {
+    if (frame === page.mainFrame()) navigations.push(frame.url());
+  });
+  const durations = ['40s', '5s'];
+  for (let index = 0; index < 3; index++) {
+    await openEditor(page);
+    await expect(page.locator('en-dialog form')).toHaveCount(1);
+    if (index === 2) await button(page, 'Add interval').click();
+    const value = String(11 + index);
+    await seconds(page).nth(index).fill(value);
+    await seconds(page).nth(index).press('Enter');
+    durations[index] = `${value}s`;
+    await expect(editor(page)).not.toBeVisible();
+    await expect(intervalRows(page).locator('.segment-duration')).toHaveText(durations);
+  }
+  expect(navigations).toEqual([]);
+  await page.reload();
+  await expect(intervalRows(page).locator('.segment-duration')).toHaveText(durations);
+});
+
+test('Enter on duration stepper buttons changes the value without submitting', async ({ page }) => {
+  await openEditor(page);
+  await button(page, 'Lengthen interval 1').press('Enter');
+  await expect(seconds(page).nth(0)).toHaveValue('41');
+  await expect(editor(page)).toBeVisible();
+  await button(page, 'Shorten interval 1').press('Enter');
+  await expect(seconds(page).nth(0)).toHaveValue('40');
+  await expect(editor(page)).toBeVisible();
+});
+
 test('removes intervals while retaining at least one usable interval', async ({ page }) => {
   await openEditor(page);
   await button(page, 'Remove interval 1').click();
@@ -241,17 +273,24 @@ test('removes intervals while retaining at least one usable interval', async ({ 
   await expect(page.locator('.completed-cycles')).toHaveText('1 cycle complete');
 });
 
-test('rejects missing names and empty, zero, or fractional durations without saving', async ({ page }) => {
+test('rejects missing names and invalid durations with Save or Enter without saving', async ({ page }) => {
   await openEditor(page);
-  await page.getByRole('textbox', { name: 'Interval 1', exact: true }).fill('  ');
-  await button(page, 'Save intervals').click();
-  await expect(page.getByRole('alert')).toHaveText('Give each interval a name, up to 40 characters.');
-  await page.getByRole('textbox', { name: 'Interval 1', exact: true }).fill('Work');
-  for (const invalid of ['', '0', '1.5']) {
-    await seconds(page).nth(0).fill(invalid);
-    await button(page, 'Save intervals').click();
+  for (const submit of [
+    () => button(page, 'Save intervals').click(),
+    () => seconds(page).nth(0).press('Enter'),
+  ]) {
+    await seconds(page).nth(0).fill('40');
+    await page.getByRole('textbox', { name: 'Interval 1', exact: true }).fill('  ');
+    await submit();
     await expect(editor(page)).toBeVisible();
-    await expect(page.getByRole('alert')).toHaveText('Use a whole number from 1 to 3,600 seconds for each interval.');
+    await expect(page.getByRole('alert')).toHaveText('Give each interval a name, up to 40 characters.');
+    await page.getByRole('textbox', { name: 'Interval 1', exact: true }).fill('Work');
+    for (const invalid of ['', '0', '1.5', '3601']) {
+      await seconds(page).nth(0).fill(invalid);
+      await submit();
+      await expect(editor(page)).toBeVisible();
+      await expect(page.getByRole('alert')).toHaveText('Use a whole number from 1 to 3,600 seconds for each interval.');
+    }
   }
   await button(page, 'Cancel').click();
   await page.reload();
